@@ -21,10 +21,8 @@ namespace RuynServer.Controllers
             _context = context;
         }
 
-
-        [HttpGet("{id}")]
-
-        public async Task<IActionResult> Details([FromRoute] int? id)
+        [HttpGet("{id}", Name = nameof(GetLevelPackById))]
+        public async Task<IActionResult> GetLevelPackById([FromRoute] int? id)
         {
             if (id == null)
             {
@@ -43,9 +41,9 @@ namespace RuynServer.Controllers
         }
 
         
-        [HttpPost]
+        [HttpPost(Name = nameof(AddLevelPack))]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([FromBody] LevelData levelData)
+        public async Task<IActionResult> AddLevelPack([FromBody] LevelData levelData)
         {
             if (ModelState.IsValid)
             {
@@ -55,8 +53,8 @@ namespace RuynServer.Controllers
             return Ok(levelData);
         }
 
-        [HttpPost("{id}")]
-        public async Task<IActionResult> DeleteConfirmed([FromRoute] int id)
+        [HttpPost("{id}", Name = nameof(DeleteLevelPack))]
+        public async Task<IActionResult> DeleteLevelPack([FromRoute] int id)
         {
             var levelData = await _context.LevelData.FindAsync(id);
             if (levelData != null)
@@ -66,11 +64,6 @@ namespace RuynServer.Controllers
 
             await _context.SaveChangesAsync();
             return NoContent();
-        }
-
-        private bool LevelDataExists(int id)
-        {
-            return _context.LevelData.Any(e => e.Id == id);
         }
     }
 }

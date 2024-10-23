@@ -5,19 +5,32 @@ namespace RuynServer.Models
 {
     public class LevelData
     {
-        [Key] // Indicates that this property is the primary key
+        [Key]
         public int Id { get; set; }
 
-        [Required] // Ensures that this field cannot be null
-        [Column(TypeName = "TEXT")] // Specifies the column type
-        public required string FileName { get; set; }
+        [Required]
+        [Column(TypeName = "TINYTEXT")]
+        [MaxLength(50)]
+        public required string LevelPackName { get; set; }
 
-        [Required] // Ensures that this field cannot be null
-        [Column(TypeName = "BLOB")] // Specifies the column type for binary data
+        [Required]
+        [Column(TypeName = "TINYTEXT")]
+        [MaxLength(50)]
+        public required string Author { get; set; }
+
+        [Required]
+        [Column(TypeName = "TINYINT")]
+        public required int LevelCount { get; set; }
+
+        [Column(TypeName = "INT")]
+        public required int DownloadCount { get; set; }
+
+        [Required]
+        [Column(TypeName = "BLOB")]
         public byte[] FileData { get; set; } = [];
 
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // Automatically generates a value for this field
-        public DateTime UploadDate { get; set; } = DateTime.UtcNow; // Default value set to current UTC time
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public DateTime UploadDate { get; set; } = DateTime.UtcNow;
 
     }
 }
