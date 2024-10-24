@@ -12,7 +12,7 @@ using RuynServer.Models;
 namespace RuynServer.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("/api/v1/[controller]")]
     public class LevelDataController : ControllerBase
     {
         private readonly RuynServerContext _context;
@@ -83,7 +83,6 @@ namespace RuynServer.Controllers
 
         
         [HttpPost(Name = nameof(AddLevelPack))]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddLevelPack([FromBody] LevelData levelData)
         {
             if (ModelState.IsValid)
