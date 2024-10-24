@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,46 @@ namespace RuynServer.Controllers
         public LevelDataController(RuynServerContext context)
         {
             _context = context;
+        }
+
+
+        [HttpGet(Name = nameof(GetLevelList))]
+        public async Task<IActionResult> GetLevelList(
+            [FromQuery] OrderByFilters orderBy,
+            [FromQuery] string? nameSearch,
+            [FromQuery] string? authorSeach,
+            [FromQuery] int skip,
+            [FromQuery][MaxLength(50)] int take = 10)
+        {
+            var response = _context.LevelData.
+                Where(x => nameSearch == null || x.LevelPackName.Contains(nameSearch)).
+                Where(x => authorSeach == null || x.LevelPackName.Contains(authorSeach));
+
+            switch (orderBy)
+            {
+                case OrderByFilters.UploadedDate:
+                    response.OrderBy(x => x.UploadDate);
+                    break;
+                case OrderByFilters.DownloadCount:
+                    response.OrderBy(x => x.DownloadCount);
+                    break;
+                case OrderByFilters.LevelCount:
+                    response.OrderBy(x => x.LevelCount);
+                    break;
+                case OrderByFilters.name:
+                    response.OrderBy(x => x.LevelPackName);
+                    break;
+                case OrderByFilters.author:
+                    response.OrderBy(x => x.Author);
+                    break;
+                default:
+                    break;
+            }
+
+            response.Skip(skip).Take(take);
+
+            return Ok(response.ToList());
+
         }
 
         [HttpGet("{id}", Name = nameof(GetLevelPackById))]
