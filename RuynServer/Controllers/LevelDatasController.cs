@@ -20,11 +20,11 @@ namespace RuynServer.Controllers
         [HttpGet(Name = nameof(GetLevelList))]
         [ProducesResponseType<IEnumerable<LevelListResponse>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetLevelList(
-            [FromQuery] string? nameSearch,
-            [FromQuery] string? authorSeach,
+            [FromQuery] string? search,
             [FromQuery] int skip,
             [FromQuery][Range(0,50)] int take = 10,
-            [FromQuery] OrderByFilters orderBy = OrderByFilters.UploadedDate)
+            [FromQuery] OrderByFilters orderBy = OrderByFilters.UploadedDate,
+            [FromQuery] bool decending = false)
         {
             var response = _context.LevelData
                 .Select(x => new LevelListResponse
@@ -36,25 +36,24 @@ namespace RuynServer.Controllers
                     DownloadCount = x.DownloadCount,
                     UploadDate = x.UploadDate
                 })
-                .Where(x => nameSearch == null || x.LevelPackName.Contains(nameSearch))
-                .Where(x => authorSeach == null || x.Author.Contains(authorSeach));
+                .Where(x => string.IsNullOrEmpty(search) || x.LevelPackName.ToLower().Contains(search.ToLower()) || x.Author.ToLower().Contains(search.ToLower()));
 
             switch (orderBy)
             {
                 case OrderByFilters.UploadedDate:
-                    response = response.OrderBy(x => x.UploadDate);
+                    response = decending ? response.OrderByDescending(x => x.UploadDate) : response.OrderBy(x => x.UploadDate);
                     break;
                 case OrderByFilters.DownloadCount:
-                    response = response.OrderBy(x => x.DownloadCount);
+                    response = decending ? response.OrderByDescending(x => x.DownloadCount) : response.OrderBy(x => x.DownloadCount);                    
                     break;
                 case OrderByFilters.LevelCount:
-                    response = response.OrderBy(x => x.LevelCount);
+                    response = decending ? response.OrderByDescending(x => x.LevelCount) : response.OrderBy(x => x.LevelCount);
                     break;
                 case OrderByFilters.name:
-                    response = response.OrderBy(x => x.LevelPackName);
+                    response = decending ? response.OrderByDescending(x => x.LevelPackName) : response.OrderBy(x => x.LevelPackName);
                     break;
                 case OrderByFilters.author:
-                    response = response.OrderBy(x => x.Author);
+                    response = decending ? response.OrderByDescending(x => x.Author) : response.OrderBy(x => x.Author);                    
                     break;
                 default:
                     break;
