@@ -13,75 +13,85 @@ namespace RuynServer.Controllers
 {
     [ApiController]
     [Route("/api/v1/[controller]")]
-    public class LevelDataController : ControllerBase
+    public class LevelDataController(RuynServerContext context) : ControllerBase
     {
-        private readonly RuynServerContext _context;
-
-        public LevelDataController(RuynServerContext context)
-        {
-            _context = context;
-        }
-
+        private readonly RuynServerContext _context = context;
 
         [HttpGet(Name = nameof(GetLevelList))]
+        [ProducesResponseType<IEnumerable<LevelListResponse>>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetLevelList(
-            [FromQuery] OrderByFilters orderBy,
             [FromQuery] string? nameSearch,
             [FromQuery] string? authorSeach,
             [FromQuery] int skip,
-            [FromQuery][MaxLength(50)] int take = 10)
+            [FromQuery][Range(0,50)] int take = 10,
+            [FromQuery] OrderByFilters orderBy = OrderByFilters.UploadedDate)
         {
-            var response = _context.LevelData.
-                Where(x => nameSearch == null || x.LevelPackName.Contains(nameSearch)).
-                Where(x => authorSeach == null || x.LevelPackName.Contains(authorSeach));
+            var response = _context.LevelData
+                .Select(x => new LevelListResponse
+                {
+                    Id = x.Id,
+                    LevelPackName = x.LevelPackName,
+                    Author = x.Author,
+                    LevelCount = x.LevelCount,
+                    DownloadCount = x.DownloadCount,
+                    UploadDate = x.UploadDate
+                })
+                .Where(x => nameSearch == null || x.LevelPackName.Contains(nameSearch))
+                .Where(x => authorSeach == null || x.Author.Contains(authorSeach));
 
             switch (orderBy)
             {
                 case OrderByFilters.UploadedDate:
-                    response.OrderBy(x => x.UploadDate);
+                    response = response.OrderBy(x => x.UploadDate);
                     break;
                 case OrderByFilters.DownloadCount:
-                    response.OrderBy(x => x.DownloadCount);
+                    response = response.OrderBy(x => x.DownloadCount);
                     break;
                 case OrderByFilters.LevelCount:
-                    response.OrderBy(x => x.LevelCount);
+                    response = response.OrderBy(x => x.LevelCount);
                     break;
                 case OrderByFilters.name:
-                    response.OrderBy(x => x.LevelPackName);
+                    response = response.OrderBy(x => x.LevelPackName);
                     break;
                 case OrderByFilters.author:
-                    response.OrderBy(x => x.Author);
+                    response = response.OrderBy(x => x.Author);
                     break;
                 default:
                     break;
             }
 
-            response.Skip(skip).Take(take);
+    
+            response = response.Skip(skip).Take(take);
 
-            return Ok(response.ToList());
+            var finalResponse = await response.ToListAsync();
+
+            return Ok(finalResponse);
 
         }
 
         [HttpGet("{id}", Name = nameof(GetLevelPackById))]
+        [ProducesResponseType<LevelData>(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetLevelPackById([FromRoute] int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
-
-            var levelData = await _context.LevelData
-                .FirstOrDefaultAsync(m => m.Id == id);
+            LevelData? levelData = await _context.LevelData
+                    .FirstOrDefaultAsync(m => m.Id == id);
 
             if (levelData == null)
             {
                 return NotFound();
             }
 
+            levelData.LevelCount++;
+            _context.LevelData.Update(levelData);
+            await _context.SaveChangesAsync();
             return Ok(levelData);
         }
 
-        
+
         [HttpPost(Name = nameof(AddLevelPack))]
         public async Task<IActionResult> AddLevelPack([FromBody] LevelData levelData)
         {
