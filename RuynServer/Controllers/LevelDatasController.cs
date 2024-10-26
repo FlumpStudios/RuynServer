@@ -84,7 +84,7 @@ namespace RuynServer.Controllers
                 return NotFound();
             }
 
-            levelData.LevelCount++;
+            levelData.DownloadCount++;
             _context.LevelData.Update(levelData);
             await _context.SaveChangesAsync();
             return Ok(levelData);
