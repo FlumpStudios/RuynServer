@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using RuynServer.Data;
 using RuynServer.Models;
@@ -97,7 +98,25 @@ namespace RuynServer.Controllers
             if (ModelState.IsValid)
             {
                 _context.Add(levelData);
-                await _context.SaveChangesAsync();
+                try
+                {
+
+                    await _context.SaveChangesAsync();
+                }
+                catch (Exception e)
+                {
+
+                    if (e is not null && e.InnerException is not null && e.InnerException is SqliteException)
+                    {
+                        SqliteException ex = e.InnerException as SqliteException;
+                        
+                        if (ex is not null && ex.SqliteErrorCode == 19)
+                        {
+                            return Conflict("Name already exists");
+                        }
+                    }
+                    throw;
+                }
             }
             return Ok(levelData);
         }
