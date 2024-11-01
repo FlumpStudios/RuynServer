@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using RuynServer.Data;
 using RuynServer.Models;
+using RuynServer.Pocos.Responses;
 
 namespace RuynServer.Controllers
 {
