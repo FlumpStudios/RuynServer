@@ -108,7 +108,7 @@ namespace RuynServer.Controllers
 
                     if (e is not null && e.InnerException is not null && e.InnerException is SqliteException)
                     {
-                        SqliteException ex = e.InnerException as SqliteException;
+                        SqliteException? ex = e.InnerException as SqliteException;
                         
                         if (ex is not null && ex.SqliteErrorCode == 19)
                         {

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using RuynServer.Data;
+using RuynServer.MIddleware;
 using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<RuynServerContext>(options =>
@@ -17,8 +18,12 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+//builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
 var app = builder.Build();
 
+app.UseMiddleware<AuthMiddleware>();
+    
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
