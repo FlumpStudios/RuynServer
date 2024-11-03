@@ -1,20 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Xml;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RuynServer.Models;
 
 namespace RuynServer.Data
 {
-    public class RuynServerContext : DbContext
+    public class RuynServerContext(DbContextOptions<RuynServerContext> options) : DbContext(options)
     {
-        public RuynServerContext (DbContextOptions<RuynServerContext> options)
-            : base(options)
-        {
-        }
-
         public DbSet<RuynServer.Models.LevelData> LevelData { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -22,6 +12,11 @@ namespace RuynServer.Data
             modelBuilder.Entity<LevelData>()
                 .HasIndex(e => e.LevelPackName)
                 .IsUnique();
+
+            modelBuilder.Entity<LevelData>()
+                .HasIndex(e => e.FileDataHash)
+                .IsUnique();
+
             base.OnModelCreating(modelBuilder);
         }
 

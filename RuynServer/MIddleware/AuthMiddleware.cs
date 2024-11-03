@@ -4,36 +4,32 @@
     using Microsoft.Extensions.Configuration;
     using System.Threading.Tasks;
 
-    public class AuthMiddleware
+    public class AuthMiddleware(RequestDelegate next, IConfiguration configuration)
     {
-        private readonly RequestDelegate _next;
-        private const string ApiKeyHeaderName = "X-Api-Key"; // Custom header name
-        private readonly string _apiKey;
 
-        public AuthMiddleware(RequestDelegate next, IConfiguration configuration)
-        {
-            _next = next;
-            _apiKey = configuration.GetValue<string>("ApiKeySettings:Key");
-        }
+        // TODO: Move to a less stupid place
+        private const string VERSION = "V 0.1";
+        private readonly RequestDelegate _next = next;
+        private const string ApiKeyHeaderName = "X-Api-Key"; // Custom header name
+        private readonly string? _apiKey = configuration.GetValue<string>("ApiKeySettings:Key");
 
         public async Task InvokeAsync(HttpContext context)
         {
             if (!context.Request.Headers.TryGetValue(ApiKeyHeaderName, out var extractedApiKey))
             {
                 context.Response.StatusCode = 401; // Unauthorized
-                await context.Response.WriteAsync("API Key is missing.");
+                await context.Response.WriteAsync($"{VERSION}");
                 return;
             }
 
-            if (!_apiKey.Equals(extractedApiKey))
+            if (_apiKey is not null && !_apiKey.Equals(extractedApiKey))
             {
                 context.Response.StatusCode = 403; // Forbidden
                 await context.Response.WriteAsync("Unauthorized client.");
                 return;
             }
 
-            await _next(context); // Call the next middleware in the pipeline
+            await _next(context); 
         }
     }
-
 }

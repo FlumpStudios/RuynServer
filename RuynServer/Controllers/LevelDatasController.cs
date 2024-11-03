@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using RuynServer.Crypto;
 using RuynServer.Data;
 using RuynServer.Models;
 using RuynServer.Pocos.Responses;
@@ -24,6 +25,7 @@ namespace RuynServer.Controllers
             [FromQuery] bool decending = false)
         {
             var response = _context.LevelData
+                .AsNoTracking()
                 .Select(x => new LevelListResponse
                 {
                     Id = x.Id,
@@ -73,8 +75,7 @@ namespace RuynServer.Controllers
             {
                 return NotFound();
             }
-            LevelData? levelData = await _context.LevelData
-                    .FirstOrDefaultAsync(m => m.Id == id);
+            LevelData? levelData = await _context.LevelData.FirstOrDefaultAsync(m => m.Id == id);
 
             if (levelData == null)
             {
@@ -87,28 +88,36 @@ namespace RuynServer.Controllers
             return Ok(levelData);
         }
 
-
         [HttpPost(Name = nameof(AddLevelPack))]
         public async Task<IActionResult> AddLevelPack([FromBody] LevelData levelData)
         {
             if (ModelState.IsValid)
             {
+                levelData.FileDataHash = Sha256Tools.GenerateHashString(levelData.FileData);
                 _context.Add(levelData);
                 try
                 {
-
                     await _context.SaveChangesAsync();
                 }
                 catch (Exception e)
                 {
-
                     if (e is not null && e.InnerException is not null && e.InnerException is SqliteException)
                     {
                         SqliteException? ex = e.InnerException as SqliteException;
                         
                         if (ex is not null && ex.SqliteErrorCode == 19)
                         {
-                            return Conflict("Name already exists");
+                            if (_context is not null && levelData is not null)
+                            {
+                                if (await _context.LevelData.AsNoTracking().AnyAsync(x => x.LevelPackName == levelData.LevelPackName))
+                                {
+                                    return Conflict("Name already exists");
+                                }
+                                else if (await _context.LevelData.AsNoTracking().AnyAsync(x => x.FileDataHash == levelData.FileDataHash))
+                                {
+                                    return Conflict("Level pack data appears to already exist");
+                                }
+                            }
                         }
                     }
                     throw;

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace RuynServer.Models
 {
@@ -28,6 +29,10 @@ namespace RuynServer.Models
         [Required]
         [Column(TypeName = "BLOB")]
         public byte[] FileData { get; set; } = [];
+
+        [JsonIgnore]
+        [Column(TypeName = "TEXT")]
+        public string? FileDataHash { get; set; } = string.Empty;
 
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime UploadDate { get; set; } = DateTime.UtcNow;
