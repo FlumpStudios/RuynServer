@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using RuynServer.Data;
 using RuynServer.MIddleware;
 using System.Text.Json.Serialization;
@@ -22,18 +21,21 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-app.UseMiddleware<AuthMiddleware>();
-    
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else 
+{ 
+    app.UseMiddleware<AuthMiddleware>();
+    app.UseAuthorization();
+}
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
 
 app.MapControllers();
 

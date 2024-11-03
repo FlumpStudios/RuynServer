@@ -12,6 +12,8 @@
 
         public required int DownloadCount { get; set; }
 
+        public required int Ranking { get; set; }
+
         public DateTime UploadDate { get; set; } = DateTime.UtcNow;
     }
 }

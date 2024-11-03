@@ -31,11 +31,14 @@ namespace RuynServer.Models
         public byte[] FileData { get; set; } = [];
 
         [JsonIgnore]
+        [Column(TypeName = "INT")]
+        public int Rank { get; set; }
+
+        [JsonIgnore]
         [Column(TypeName = "TEXT")]
         public string? FileDataHash { get; set; } = string.Empty;
 
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime UploadDate { get; set; } = DateTime.UtcNow;
-        
     }
 }

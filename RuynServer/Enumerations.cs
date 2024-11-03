@@ -6,6 +6,7 @@
         DownloadCount,
         LevelCount,
         name,
-        author
+        author,
+        ranking
     }
 }

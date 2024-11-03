@@ -33,7 +33,8 @@ namespace RuynServer.Controllers
                     Author = x.Author,
                     LevelCount = x.LevelCount,
                     DownloadCount = x.DownloadCount,
-                    UploadDate = x.UploadDate
+                    UploadDate = x.UploadDate,
+                    Ranking = x.Rank
                 })
                 .Where(x => string.IsNullOrEmpty(search) || x.LevelPackName.ToLower().Contains(search.ToLower()) || x.Author.ToLower().Contains(search.ToLower()));
 
@@ -54,10 +55,12 @@ namespace RuynServer.Controllers
                 case OrderByFilters.author:
                     response = decending ? response.OrderByDescending(x => x.Author) : response.OrderBy(x => x.Author);                    
                     break;
+                case OrderByFilters.ranking:
+                    response = decending ? response.OrderByDescending(x => x.Ranking) : response.OrderBy(x => x.Ranking);
+                    break;
                 default:
                     break;
             }
-
     
             response = response.Skip(skip).Take(take);
 
@@ -88,6 +91,41 @@ namespace RuynServer.Controllers
             return Ok(levelData);
         }
 
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [HttpPost("{id}/upvote",Name = nameof(Upvote))]
+        public async Task<IActionResult> Upvote(int id)
+        {
+            var current = await _context.LevelData.FindAsync(id);
+            if (current == null)
+            {
+                return NotFound();
+            }
+
+            current.Rank++;
+
+            _context.LevelData.Update(current);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [HttpPost("{id}/downvote", Name = nameof(Downvote))]
+        public async Task<IActionResult> Downvote(int id)
+        {
+            var current = await _context.LevelData.FindAsync(id);
+            if (current == null)
+            {
+                return NotFound();
+            }
+
+            current.Rank--;
+
+            _context.LevelData.Update(current);
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [HttpPost(Name = nameof(AddLevelPack))]
         public async Task<IActionResult> AddLevelPack([FromBody] LevelData levelData)
         {
@@ -123,9 +161,10 @@ namespace RuynServer.Controllers
                     throw;
                 }
             }
-            return Ok(levelData);
+            return NoContent();
         }
 
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [HttpPost("{id}/delete", Name = nameof(DeleteLevelPack))]
         public async Task<IActionResult> DeleteLevelPack([FromRoute] int id)
         {
@@ -139,6 +178,7 @@ namespace RuynServer.Controllers
             return NoContent();
         }
 
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [HttpPost("deletebyname", Name = nameof(DeleteLevelPackByName))]        
         public async Task<IActionResult> DeleteLevelPackByName([FromQuery] string name)
         {
