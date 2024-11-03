@@ -126,17 +126,31 @@ namespace RuynServer.Controllers
             return Ok(levelData);
         }
 
-        [HttpPost("{id}", Name = nameof(DeleteLevelPack))]
+        [HttpDelete("{id}", Name = nameof(DeleteLevelPack))]
         public async Task<IActionResult> DeleteLevelPack([FromRoute] int id)
         {
             var levelData = await _context.LevelData.FindAsync(id);
             if (levelData != null)
             {
                 _context.LevelData.Remove(levelData);
+                await _context.SaveChangesAsync();
             }
 
-            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [HttpDelete("byname", Name = nameof(DeleteLevelPackByName))]        
+        public async Task<IActionResult> DeleteLevelPackByName([FromQuery] string name)
+        {
+            var levelData = await _context.LevelData.FirstOrDefaultAsync(x => x.LevelPackName == name);
+            if (levelData != null)
+            {
+                _context.LevelData.Remove(levelData);
+                await _context.SaveChangesAsync();
+            }
+
             return NoContent();
         }
     }
+
 }

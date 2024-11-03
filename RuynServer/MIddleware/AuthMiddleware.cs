@@ -8,7 +8,8 @@
     {
 
         // TODO: Move to a less stupid place
-        private const string VERSION = "V 0.1";
+        private const string VERSION = "V0.1.5";
+
         private readonly RequestDelegate _next = next;
         private const string ApiKeyHeaderName = "X-Api-Key"; // Custom header name
         private readonly string? _apiKey = configuration.GetValue<string>("ApiKeySettings:Key");
