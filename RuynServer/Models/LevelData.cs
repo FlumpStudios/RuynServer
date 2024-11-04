@@ -1,14 +1,39 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using RuynServer.Enumerations;
 
 namespace RuynServer.Models
 {
+
+    public class VoteType
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        [Column("Id")]
+
+        public VotingType VoteId { get; set; }
+
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class VoteJuntion
+    {
+        public string? ClientId { get; set; }
+        public int LevelDataId { get; set; }
+        public VotingType VoteID { get; set; }
+        public LevelData? LevelData { get; set; }
+        public VoteType? Votes { get; set; }
+    }
+
     public class LevelData
     {
         [Key]
-        public int Id { get; set; }
+        [Column("Id")]
+        public int LevelDataId { get; set; }
 
+        public string? ClientId { get; set; }        
+        
         [Required]
         [Column(TypeName = "TINYTEXT")]
         [MaxLength(50)]
@@ -40,5 +65,8 @@ namespace RuynServer.Models
 
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime UploadDate { get; set; } = DateTime.UtcNow;
+
+        [JsonIgnore]
+        public ICollection<VoteJuntion> VoteJunctions { get; set; } = [];
     }
 }

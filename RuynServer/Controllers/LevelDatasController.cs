@@ -28,7 +28,7 @@ namespace RuynServer.Controllers
                 .AsNoTracking()
                 .Select(x => new LevelListResponse
                 {
-                    Id = x.Id,
+                    Id = x.LevelDataId,
                     LevelPackName = x.LevelPackName,
                     Author = x.Author,
                     LevelCount = x.LevelCount,
@@ -78,7 +78,7 @@ namespace RuynServer.Controllers
             {
                 return NotFound();
             }
-            LevelData? levelData = await _context.LevelData.FirstOrDefaultAsync(m => m.Id == id);
+            LevelData? levelData = await _context.LevelData.FirstOrDefaultAsync(m => m.LevelDataId == id);
 
             if (levelData == null)
             {
@@ -93,35 +93,131 @@ namespace RuynServer.Controllers
 
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [HttpPost("{id}/upvote",Name = nameof(Upvote))]
-        public async Task<IActionResult> Upvote(int id)
+        public async Task<IActionResult> Upvote(
+            [FromRoute] int id, 
+            [FromBody] string clientID)
         {
-            var current = await _context.LevelData.FindAsync(id);
-            if (current == null)
+            var currentVote = await _context.VoteJuntion.FirstOrDefaultAsync(x => x.ClientId == clientID && x.LevelDataId == id);
+
+            if (currentVote is null)
             {
-                return NotFound();
+                VoteJuntion voteJuntion = new()
+                {
+                    ClientId = clientID,
+                    VoteID = Enumerations.VotingType.Upvote,
+                    LevelDataId = id            
+                };
+
+                
+                _context.VoteJuntion.Add(voteJuntion);
+
+                var currentLevel = await _context.LevelData.FindAsync(id);
+                if (currentLevel is not null)
+                {
+                    currentLevel.Rank++;
+                }
+            }
+            else
+            {
+                if (currentVote.VoteID == Enumerations.VotingType.Upvote)
+                { 
+                    _context.Remove(currentVote);
+
+                    var currentLevel = await _context.LevelData.FindAsync(id);
+                    if (currentLevel is not null)
+                    {
+                        currentLevel.Rank --;
+                        _context.LevelData.Update(currentLevel);
+                    }
+                }
+                else if (currentVote.VoteID == Enumerations.VotingType.Downvote)
+                {
+                    currentVote.VoteID = Enumerations.VotingType.Upvote;
+                    _context.VoteJuntion.Update(currentVote);
+
+                    var currentLevel = await _context.LevelData.FindAsync(id);
+                    if (currentLevel is not null)
+                    {
+                        currentLevel.Rank += 2;
+                        _context.LevelData.Update(currentLevel);
+                    }
+                }
             }
 
-            current.Rank++;
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                var foo = ex;
+            }
 
-            _context.LevelData.Update(current);
-            await _context.SaveChangesAsync();
             return NoContent();
         }
 
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [HttpPost("{id}/downvote", Name = nameof(Downvote))]
-        public async Task<IActionResult> Downvote(int id)
+        public async Task<IActionResult> Downvote(
+            [FromRoute] int id,
+            [FromBody] string clientID)
         {
-            var current = await _context.LevelData.FindAsync(id);
-            if (current == null)
+            var currentVote = await _context.VoteJuntion.FirstOrDefaultAsync(x => x.ClientId == clientID && x.LevelDataId == id);
+
+            if (currentVote is null)
             {
-                return NotFound();
+                VoteJuntion voteJuntion = new()
+                {
+                    ClientId = clientID,
+                    VoteID = Enumerations.VotingType.Downvote,
+                    LevelDataId = id
+                };
+
+
+                _context.VoteJuntion.Add(voteJuntion);
+
+                var currentLevel = await _context.LevelData.FindAsync(id);
+                if (currentLevel is not null)
+                {
+                    currentLevel.Rank--;
+                }
+            }
+            else
+            {
+                if (currentVote.VoteID == Enumerations.VotingType.Downvote)
+                {
+                    _context.Remove(currentVote);
+
+                    var currentLevel = await _context.LevelData.FindAsync(id);
+                    if (currentLevel is not null)
+                    {
+                        currentLevel.Rank++;
+                        _context.LevelData.Update(currentLevel);
+                    }
+                }
+                else if (currentVote.VoteID == Enumerations.VotingType.Upvote)
+                {
+                    currentVote.VoteID = Enumerations.VotingType.Downvote;
+                    _context.VoteJuntion.Update(currentVote);
+
+                    var currentLevel = await _context.LevelData.FindAsync(id);
+                    if (currentLevel is not null)
+                    {
+                        currentLevel.Rank -= 2;
+                        _context.LevelData.Update(currentLevel);
+                    }
+                }
             }
 
-            current.Rank--;
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                var foo = ex;
+            }
 
-            _context.LevelData.Update(current);
-            await _context.SaveChangesAsync();
             return NoContent();
         }
 

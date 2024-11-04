@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -24,8 +24,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="RuynServer.db">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="RuynServerContext-00f68e85-fd4f-43f6-8970-01517f69455b.db">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="RuynServerContext-00f68e85-fd4f-43f6-8970-01517f69455b.db-shm">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="RuynServerContext-00f68e85-fd4f-43f6-8970-01517f69455b.db-wal">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="RuynServerContext-00f68e85-fd4f-43f6-8970-01517f69455b.sqbpro">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

@@ -8,7 +8,7 @@
     {
 
         // TODO: Move to a less stupid place
-        private const string VERSION = "V0.1.5";
+        private const string VERSION = "V0.1.6";
 
         private readonly RequestDelegate _next = next;
         private const string ApiKeyHeaderName = "X-Api-Key"; // Custom header name
