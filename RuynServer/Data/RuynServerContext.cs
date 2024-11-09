@@ -8,6 +8,7 @@ namespace RuynServer.Data
         public DbSet<RuynServer.Models.LevelData> LevelData { get; set; } = default!;
         public DbSet<RuynServer.Models.VoteJuntion> VoteJuntion { get; set; } = default!;
         public DbSet<RuynServer.Models.VoteType> Votes { get; set; } = default!;
+        public DbSet<RuynServer.Models.Leaderboard> Leaderboard { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,26 +32,21 @@ namespace RuynServer.Data
               );
 
             modelBuilder.Entity<LevelData>()
-                .HasIndex(e => e.LevelPackName)
-                .IsUnique();
-
-            modelBuilder.Entity<LevelData>()
                 .HasIndex(e => e.FileDataHash)
                 .IsUnique();
 
+            modelBuilder.Entity<Leaderboard>().HasIndex(e => e.Score);
+
+            modelBuilder.Entity<Leaderboard>().HasKey(x => new { x.ClientId, x.LevelPackName, x.LevelNumber });
 
             modelBuilder.Entity<VoteJuntion>()
-              .HasKey(v => new { v.ClientId, v.LevelDataId });
-
-
-            modelBuilder.Entity<VoteJuntion>()
-              .HasIndex(v => new { v.ClientId, v.LevelDataId })
-              .IsUnique();
+              .HasKey(v => new { v.ClientId, v.LevelPackName });
             
             modelBuilder.Entity<VoteJuntion>()
                 .HasOne(v => v.LevelData)
                 .WithMany(l => l.VoteJunctions)
-                .HasForeignKey(v => v.LevelDataId);
+                .HasForeignKey(v => v.LevelPackName);
+
 
             base.OnModelCreating(modelBuilder);
         }

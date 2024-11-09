@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RuynServer.Data;
 
@@ -10,9 +11,11 @@ using RuynServer.Data;
 namespace RuynServer.Migrations
 {
     [DbContext(typeof(RuynServerContext))]
-    partial class RuynServerContextModelSnapshot : ModelSnapshot
+    [Migration("20241109112641_Inital-Migration")]
+    partial class InitalMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.10");
@@ -31,6 +34,7 @@ namespace RuynServer.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LevelDataLevelPackName")
+                        .IsRequired()
                         .HasColumnType("TINYTEXT");
 
                     b.Property<int>("Score")
@@ -155,7 +159,9 @@ namespace RuynServer.Migrations
                 {
                     b.HasOne("RuynServer.Models.LevelData", "LevelData")
                         .WithMany()
-                        .HasForeignKey("LevelDataLevelPackName");
+                        .HasForeignKey("LevelDataLevelPackName")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("LevelData");
                 });

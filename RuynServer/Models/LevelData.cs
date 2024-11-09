@@ -19,8 +19,9 @@ namespace RuynServer.Models
 
     public class VoteJuntion
     {
+        [MaxLength(100)]
         public string? ClientId { get; set; }
-        public int LevelDataId { get; set; }
+        public required string LevelPackName { get; set; }
         public VotingType VoteID { get; set; }
         public LevelData? LevelData { get; set; }
         public VoteType? Votes { get; set; }
@@ -29,15 +30,13 @@ namespace RuynServer.Models
     public class LevelData
     {
         [Key]
-        [Column("Id")]
-        public int LevelDataId { get; set; }
-
-        public string? ClientId { get; set; }        
-        
-        [Required]
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
         [Column(TypeName = "TINYTEXT")]
         [MaxLength(50)]
+        [Required]
         public required string LevelPackName { get; set; }
+
+        public required string ClientId { get; set; }
 
         [Required]
         [Column(TypeName = "TINYTEXT")]

@@ -28,7 +28,6 @@ namespace RuynServer.Controllers
                 .AsNoTracking()
                 .Select(x => new LevelListResponse
                 {
-                    Id = x.LevelDataId,
                     LevelPackName = x.LevelPackName,
                     Author = x.Author,
                     LevelCount = x.LevelCount,
@@ -70,15 +69,15 @@ namespace RuynServer.Controllers
 
         }
 
-        [HttpGet("{id}", Name = nameof(GetLevelPackById))]
+        [HttpGet("{levelPackName}", Name = nameof(GetLevelPackByName))]
         [ProducesResponseType<LevelData>(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetLevelPackById([FromRoute] int? id)
+        public async Task<IActionResult> GetLevelPackByName([FromRoute] string levelPackName)
         {
-            if (id == null)
+            if (levelPackName == null)
             {
                 return NotFound();
             }
-            LevelData? levelData = await _context.LevelData.FirstOrDefaultAsync(m => m.LevelDataId == id);
+            LevelData? levelData = await _context.LevelData.FirstOrDefaultAsync(m => m.LevelPackName == levelPackName);
 
             if (levelData == null)
             {
@@ -92,12 +91,12 @@ namespace RuynServer.Controllers
         }
 
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [HttpPost("{id}/upvote",Name = nameof(Upvote))]
+        [HttpPost("{levelPackName}/upvote", Name = nameof(Upvote))]
         public async Task<IActionResult> Upvote(
-            [FromRoute] int id, 
+            [FromRoute] string levelPackName,
             [FromBody] string clientID)
         {
-            var currentVote = await _context.VoteJuntion.FirstOrDefaultAsync(x => x.ClientId == clientID && x.LevelDataId == id);
+            var currentVote = await _context.VoteJuntion.FirstOrDefaultAsync(x => x.ClientId == clientID && x.LevelPackName == levelPackName);
 
             if (currentVote is null)
             {
@@ -105,13 +104,13 @@ namespace RuynServer.Controllers
                 {
                     ClientId = clientID,
                     VoteID = Enumerations.VotingType.Upvote,
-                    LevelDataId = id            
+                    LevelPackName = levelPackName
                 };
 
-                
+
                 _context.VoteJuntion.Add(voteJuntion);
 
-                var currentLevel = await _context.LevelData.FindAsync(id);
+                var currentLevel = await _context.LevelData.FindAsync(levelPackName);
                 if (currentLevel is not null)
                 {
                     currentLevel.Rank++;
@@ -120,13 +119,13 @@ namespace RuynServer.Controllers
             else
             {
                 if (currentVote.VoteID == Enumerations.VotingType.Upvote)
-                { 
+                {
                     _context.Remove(currentVote);
 
-                    var currentLevel = await _context.LevelData.FindAsync(id);
+                    var currentLevel = await _context.LevelData.FindAsync(levelPackName);
                     if (currentLevel is not null)
                     {
-                        currentLevel.Rank --;
+                        currentLevel.Rank--;
                         _context.LevelData.Update(currentLevel);
                     }
                 }
@@ -135,7 +134,7 @@ namespace RuynServer.Controllers
                     currentVote.VoteID = Enumerations.VotingType.Upvote;
                     _context.VoteJuntion.Update(currentVote);
 
-                    var currentLevel = await _context.LevelData.FindAsync(id);
+                    var currentLevel = await _context.LevelData.FindAsync(levelPackName);
                     if (currentLevel is not null)
                     {
                         currentLevel.Rank += 2;
@@ -144,25 +143,18 @@ namespace RuynServer.Controllers
                 }
             }
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                var foo = ex;
-            }
+            await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [HttpPost("{id}/downvote", Name = nameof(Downvote))]
+        [HttpPost("{levelPackName}/downvote", Name = nameof(Downvote))]
         public async Task<IActionResult> Downvote(
-            [FromRoute] int id,
+            [FromRoute] string levelPackName,
             [FromBody] string clientID)
         {
-            var currentVote = await _context.VoteJuntion.FirstOrDefaultAsync(x => x.ClientId == clientID && x.LevelDataId == id);
+            var currentVote = await _context.VoteJuntion.FirstOrDefaultAsync(x => x.ClientId == clientID && x.LevelPackName == levelPackName);
 
             if (currentVote is null)
             {
@@ -170,13 +162,13 @@ namespace RuynServer.Controllers
                 {
                     ClientId = clientID,
                     VoteID = Enumerations.VotingType.Downvote,
-                    LevelDataId = id
+                    LevelPackName = levelPackName
                 };
 
 
                 _context.VoteJuntion.Add(voteJuntion);
 
-                var currentLevel = await _context.LevelData.FindAsync(id);
+                var currentLevel = await _context.LevelData.FindAsync(levelPackName);
                 if (currentLevel is not null)
                 {
                     currentLevel.Rank--;
@@ -188,7 +180,7 @@ namespace RuynServer.Controllers
                 {
                     _context.Remove(currentVote);
 
-                    var currentLevel = await _context.LevelData.FindAsync(id);
+                    var currentLevel = await _context.LevelData.FindAsync(levelPackName);
                     if (currentLevel is not null)
                     {
                         currentLevel.Rank++;
@@ -200,7 +192,7 @@ namespace RuynServer.Controllers
                     currentVote.VoteID = Enumerations.VotingType.Downvote;
                     _context.VoteJuntion.Update(currentVote);
 
-                    var currentLevel = await _context.LevelData.FindAsync(id);
+                    var currentLevel = await _context.LevelData.FindAsync(levelPackName);
                     if (currentLevel is not null)
                     {
                         currentLevel.Rank -= 2;
@@ -238,7 +230,7 @@ namespace RuynServer.Controllers
                     if (e is not null && e.InnerException is not null && e.InnerException is SqliteException)
                     {
                         SqliteException? ex = e.InnerException as SqliteException;
-                        
+
                         if (ex is not null && ex.SqliteErrorCode == 19)
                         {
                             if (_context is not null && levelData is not null)
@@ -261,22 +253,8 @@ namespace RuynServer.Controllers
         }
 
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [HttpPost("{id}/delete", Name = nameof(DeleteLevelPack))]
-        public async Task<IActionResult> DeleteLevelPack([FromRoute] int id)
-        {
-            var levelData = await _context.LevelData.FindAsync(id);
-            if (levelData != null)
-            {
-                _context.LevelData.Remove(levelData);
-                await _context.SaveChangesAsync();
-            }
-
-            return NoContent();
-        }
-
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [HttpPost("deletebyname", Name = nameof(DeleteLevelPackByName))]        
-        public async Task<IActionResult> DeleteLevelPackByName([FromQuery] string name)
+        [HttpPost("delete", Name = nameof(Delete))]
+        public async Task<IActionResult> Delete([FromQuery] string name)
         {
             var levelData = await _context.LevelData.FirstOrDefaultAsync(x => x.LevelPackName == name);
             if (levelData != null)

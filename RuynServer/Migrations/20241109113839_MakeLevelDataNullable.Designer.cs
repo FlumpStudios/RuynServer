@@ -11,8 +11,8 @@ using RuynServer.Data;
 namespace RuynServer.Migrations
 {
     [DbContext(typeof(RuynServerContext))]
-    [Migration("20241104114015_initial-migration")]
-    partial class initialmigration
+    [Migration("20241109113839_MakeLevelDataNullable")]
+    partial class MakeLevelDataNullable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -20,12 +20,43 @@ namespace RuynServer.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.10");
 
+            modelBuilder.Entity("RuynServer.Models.Leaderboard", b =>
+                {
+                    b.Property<string>("LevelPackName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LevelNumber")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LevelDataLevelPackName")
+                        .HasColumnType("TINYTEXT");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("LevelPackName", "LevelNumber");
+
+                    b.HasIndex("LevelDataLevelPackName");
+
+                    b.HasIndex("Score");
+
+                    b.ToTable("Leaderboard");
+                });
+
             modelBuilder.Entity("RuynServer.Models.LevelData", b =>
                 {
-                    b.Property<int>("LevelDataId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("Id");
+                    b.Property<string>("LevelPackName")
+                        .HasMaxLength(50)
+                        .HasColumnType("TINYTEXT");
 
                     b.Property<string>("Author")
                         .IsRequired()
@@ -33,6 +64,7 @@ namespace RuynServer.Migrations
                         .HasColumnType("TINYTEXT");
 
                     b.Property<string>("ClientId")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("DownloadCount")
@@ -48,11 +80,6 @@ namespace RuynServer.Migrations
                     b.Property<int>("LevelCount")
                         .HasColumnType("TINYINT");
 
-                    b.Property<string>("LevelPackName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TINYTEXT");
-
                     b.Property<int>("Rank")
                         .HasColumnType("INT");
 
@@ -60,12 +87,9 @@ namespace RuynServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.HasKey("LevelDataId");
+                    b.HasKey("LevelPackName");
 
                     b.HasIndex("FileDataHash")
-                        .IsUnique();
-
-                    b.HasIndex("LevelPackName")
                         .IsUnique();
 
                     b.ToTable("LevelData");
@@ -74,10 +98,11 @@ namespace RuynServer.Migrations
             modelBuilder.Entity("RuynServer.Models.VoteJuntion", b =>
                 {
                     b.Property<string>("ClientId")
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("LevelDataId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("LevelPackName")
+                        .HasColumnType("TINYTEXT");
 
                     b.Property<int>("VoteID")
                         .HasColumnType("INTEGER");
@@ -85,13 +110,13 @@ namespace RuynServer.Migrations
                     b.Property<int?>("VotesVoteId")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("ClientId", "LevelDataId");
+                    b.HasKey("ClientId", "LevelPackName");
 
-                    b.HasIndex("LevelDataId");
+                    b.HasIndex("LevelPackName");
 
                     b.HasIndex("VotesVoteId");
 
-                    b.HasIndex("ClientId", "LevelDataId")
+                    b.HasIndex("ClientId", "LevelPackName")
                         .IsUnique();
 
                     b.ToTable("VoteJuntion");
@@ -129,11 +154,20 @@ namespace RuynServer.Migrations
                         });
                 });
 
+            modelBuilder.Entity("RuynServer.Models.Leaderboard", b =>
+                {
+                    b.HasOne("RuynServer.Models.LevelData", "LevelData")
+                        .WithMany()
+                        .HasForeignKey("LevelDataLevelPackName");
+
+                    b.Navigation("LevelData");
+                });
+
             modelBuilder.Entity("RuynServer.Models.VoteJuntion", b =>
                 {
                     b.HasOne("RuynServer.Models.LevelData", "LevelData")
                         .WithMany("VoteJunctions")
-                        .HasForeignKey("LevelDataId")
+                        .HasForeignKey("LevelPackName")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

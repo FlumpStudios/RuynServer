@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace RuynServer.Migrations
 {
     /// <inheritdoc />
-    public partial class initialmigration : Migration
+    public partial class InitalMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,10 +17,8 @@ namespace RuynServer.Migrations
                 name: "LevelData",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    ClientId = table.Column<string>(type: "TEXT", nullable: true),
                     LevelPackName = table.Column<string>(type: "TINYTEXT", maxLength: 50, nullable: false),
+                    ClientId = table.Column<string>(type: "TEXT", nullable: false),
                     Author = table.Column<string>(type: "TINYTEXT", maxLength: 50, nullable: false),
                     LevelCount = table.Column<int>(type: "TINYINT", nullable: false),
                     DownloadCount = table.Column<int>(type: "INT", nullable: false),
@@ -31,7 +29,7 @@ namespace RuynServer.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_LevelData", x => x.Id);
+                    table.PrimaryKey("PK_LevelData", x => x.LevelPackName);
                 });
 
             migrationBuilder.CreateTable(
@@ -47,22 +45,44 @@ namespace RuynServer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Leaderboard",
+                columns: table => new
+                {
+                    LevelPackName = table.Column<string>(type: "TEXT", nullable: false),
+                    LevelNumber = table.Column<int>(type: "INTEGER", nullable: false),
+                    UserName = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    ClientId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Score = table.Column<int>(type: "INTEGER", nullable: false),
+                    LevelDataLevelPackName = table.Column<string>(type: "TINYTEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Leaderboard", x => new { x.LevelPackName, x.LevelNumber });
+                    table.ForeignKey(
+                        name: "FK_Leaderboard_LevelData_LevelDataLevelPackName",
+                        column: x => x.LevelDataLevelPackName,
+                        principalTable: "LevelData",
+                        principalColumn: "LevelPackName",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "VoteJuntion",
                 columns: table => new
                 {
-                    ClientId = table.Column<string>(type: "TEXT", nullable: false),
-                    LevelDataId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ClientId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    LevelPackName = table.Column<string>(type: "TINYTEXT", nullable: false),
                     VoteID = table.Column<int>(type: "INTEGER", nullable: false),
                     VotesVoteId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_VoteJuntion", x => new { x.ClientId, x.LevelDataId });
+                    table.PrimaryKey("PK_VoteJuntion", x => new { x.ClientId, x.LevelPackName });
                     table.ForeignKey(
-                        name: "FK_VoteJuntion_LevelData_LevelDataId",
-                        column: x => x.LevelDataId,
+                        name: "FK_VoteJuntion_LevelData_LevelPackName",
+                        column: x => x.LevelPackName,
                         principalTable: "LevelData",
-                        principalColumn: "Id",
+                        principalColumn: "LevelPackName",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_VoteJuntion_Votes_VotesVoteId",
@@ -82,27 +102,31 @@ namespace RuynServer.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Leaderboard_LevelDataLevelPackName",
+                table: "Leaderboard",
+                column: "LevelDataLevelPackName");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Leaderboard_Score",
+                table: "Leaderboard",
+                column: "Score");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_LevelData_FileDataHash",
                 table: "LevelData",
                 column: "FileDataHash",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_LevelData_LevelPackName",
-                table: "LevelData",
-                column: "LevelPackName",
+                name: "IX_VoteJuntion_ClientId_LevelPackName",
+                table: "VoteJuntion",
+                columns: new[] { "ClientId", "LevelPackName" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_VoteJuntion_ClientId_LevelDataId",
+                name: "IX_VoteJuntion_LevelPackName",
                 table: "VoteJuntion",
-                columns: new[] { "ClientId", "LevelDataId" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_VoteJuntion_LevelDataId",
-                table: "VoteJuntion",
-                column: "LevelDataId");
+                column: "LevelPackName");
 
             migrationBuilder.CreateIndex(
                 name: "IX_VoteJuntion_VotesVoteId",
@@ -113,6 +137,9 @@ namespace RuynServer.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "Leaderboard");
+
             migrationBuilder.DropTable(
                 name: "VoteJuntion");
 
