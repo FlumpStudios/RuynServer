@@ -1,6 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using RuynServer.Data;
 using RuynServer.Models;
 
@@ -20,12 +23,69 @@ namespace RuynServer.Controllers
             [FromQuery] int skip,
             [FromQuery][Range(0, 50)] int take = 10)
         {
-            var response = await _context.Leaderboard.Where(x => x.LevelPackName == levelPack && x.LevelNumber == levelNumber)
-                .OrderByDescending(x => x.Score)
-                .Skip(skip)
-                .Take(take)
-                .ToListAsync();
+            List<Leaderboard> response = await GetHighScoreQuery(levelPack, levelNumber, skip, take);
 
+            return Ok(response);
+        }
+
+        [ProducesResponseType<string>(StatusCodes.Status200OK)]
+        [HttpGet("asstring",Name = nameof(GetLeaderboardsString))]
+        public async Task<IActionResult> GetLeaderboardsString(
+            [FromQuery] string levelPack,
+            [FromQuery] int levelNumber,
+            [FromQuery] int skip,
+            [FromQuery] string? clientId = null,
+            [FromQuery][Range(0, 50)] int take = 10)
+        {
+            List<Leaderboard> response = await GetHighScoreQuery(levelPack, levelNumber, skip, take);
+
+            int i = skip + 1;
+            StringBuilder stringBuilder = new();
+
+            stringBuilder.AppendLine($"{"#",-5} {"Username",-15} {"Score",10}");
+
+            foreach (var entry in response)
+            {
+                if (entry.UserName is null)
+                {
+                    entry.UserName = "Anonymous";
+                }
+                string username = entry.UserName.Length > 12
+                ? entry.UserName.Substring(0, 12) + "..."
+                : entry.UserName;
+
+                stringBuilder.AppendLine($"{i,-5} {username,-15} {entry.Score,10}");
+                i++;
+            }
+
+            if (clientId is not null)
+            {
+                string? rankString = await GetRankString(clientId: clientId, levelPackName: levelPack, levelNumber: levelNumber);
+                if (rankString is not null)
+                {
+                    stringBuilder.AppendLine(rankString);
+                }
+            }
+
+
+            return Ok(stringBuilder.ToString());
+        }
+
+        [ProducesResponseType<string>(StatusCodes.Status200OK)]
+        [HttpGet("{levelPackName}/{levelNumber}/high", Name = nameof(GetHighScore))]
+        public async Task<IActionResult> GetHighScore([FromRoute] string levelPackName, [FromRoute] int levelNumber)
+        {
+            var highScore = await _context.Leaderboard.Where(x =>
+            x.LevelPackName == levelPackName &&
+            x.LevelNumber == levelNumber)
+                .OrderByDescending(x => x.Score).FirstOrDefaultAsync();
+
+            if (highScore == null)
+            {
+                return Ok();
+            }
+
+            string response = $"{highScore.UserName} {highScore.Score}";
             return Ok(response);
         }
 
@@ -33,12 +93,10 @@ namespace RuynServer.Controllers
         [HttpGet("{clientId}/{levelPackName}/{levelNumber}", Name = nameof(GetUserScore))]
         public async Task<IActionResult> GetUserScore([FromRoute] string clientId, [FromRoute] string levelPackName, [FromRoute] int levelNumber)
         {
-            var userLeaderboard = await _context.Leaderboard.FirstOrDefaultAsync(x => x.ClientId == clientId && x.LevelPackName == levelPackName && x.LevelNumber == levelNumber);
-            if (userLeaderboard == null)
-            {
-                return Ok(0);
-            }
-            return Ok(userLeaderboard.Score);
+            int? score = await _context.Leaderboard
+                .Where(x => x.ClientId == clientId && x.LevelPackName == levelPackName && x.LevelNumber == levelNumber).Select(x => x.Score).FirstOrDefaultAsync();
+            
+            return Ok(score ?? 0);
         }
 
         [ProducesResponseType<int?>(StatusCodes.Status200OK)]
@@ -46,6 +104,38 @@ namespace RuynServer.Controllers
         public async Task<IActionResult> GetRank([FromRoute] string clientId, [FromRoute] string levelPackName, [FromRoute]int levelNumber)
         {
             return Ok(await CalcRank(clientId: clientId, levelPackName: levelPackName, levelNumber:levelNumber));
+        }
+
+        [ProducesResponseType<string>(StatusCodes.Status200OK)]
+        [HttpGet("{clientId}/{levelPackName}/{levelNumber}/rankasstring", Name = nameof(GetRankAsString))]
+        public async Task<IActionResult> GetRankAsString([FromRoute] string clientId, [FromRoute] string levelPackName, [FromRoute] int levelNumber)
+        {
+            var userScore = await _context.Leaderboard
+                .Where(u => u.ClientId == clientId && u.LevelPackName == levelPackName && u.LevelNumber == u.LevelNumber)
+                .FirstOrDefaultAsync();
+
+            if (userScore is not null)
+            {
+                var rank = await _context.Leaderboard
+                    .CountAsync(u => u.Score > userScore.Score) + 1;
+
+                StringBuilder stringBuilder = new();
+                
+                if (userScore.UserName is null)
+                {
+                    userScore.UserName = "Anonymous";
+                }
+
+                string username = userScore.UserName.Length > 12
+                ? string.Concat(userScore.UserName.AsSpan(0, 12), "...")
+                : userScore.UserName;
+
+                stringBuilder.AppendLine($"{rank,-5} {username,-15} {userScore.Score,10}");
+
+                return Ok(stringBuilder.ToString());
+            }
+
+            return Ok(null);
         }
 
         [ProducesResponseType<int?>(StatusCodes.Status200OK)]
@@ -87,7 +177,46 @@ namespace RuynServer.Controllers
                 return rank;
             }
 
-            return null; ;
+            return null;
+        }
+
+        private async Task<string?> GetRankString(string clientId, string levelPackName, int levelNumber)
+        {
+            var userScore = await _context.Leaderboard
+                   .Where(u => u.ClientId == clientId && u.LevelPackName == levelPackName && u.LevelNumber == levelNumber)
+                   .FirstOrDefaultAsync();
+
+            if (userScore is not null)
+            {
+                var rank = await _context.Leaderboard
+                    .CountAsync(u => u.Score > userScore.Score) + 1;
+
+                StringBuilder stringBuilder = new();
+
+                if (userScore.UserName is null)
+                {
+                    userScore.UserName = "Anonymous";
+                }
+
+                string username = userScore.UserName.Length > 12
+                ? string.Concat(userScore.UserName.AsSpan(0, 12), "...")
+                : userScore.UserName;
+
+                stringBuilder.AppendLine($"{rank,-5} {username,-15} {userScore.Score,10}");
+
+                return stringBuilder.ToString();
+            }
+
+            return null;
+        }
+
+        private async Task<List<Leaderboard>> GetHighScoreQuery(string levelPack, int levelNumber, int skip, int take)
+        {
+            return await _context.Leaderboard.Where(x => x.LevelPackName == levelPack && x.LevelNumber == levelNumber)
+                            .OrderByDescending(x => x.Score)
+                            .Skip(skip)
+                            .Take(take)
+                            .ToListAsync();
         }
     }
 }
