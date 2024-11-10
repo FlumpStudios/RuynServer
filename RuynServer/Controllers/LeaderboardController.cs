@@ -15,10 +15,13 @@ namespace RuynServer.Controllers
         [ProducesResponseType<IEnumerable<Leaderboard>>(StatusCodes.Status200OK)]
         [HttpGet(Name = nameof(GetLeaderboards))]
         public async Task<IActionResult> GetLeaderboards(
+            [FromQuery] string levelPack,
+            [FromQuery] int levelNumber,
             [FromQuery] int skip,
             [FromQuery][Range(0, 50)] int take = 10)
         {
-            var response = await _context.Leaderboard.OrderByDescending(x => x.Score)
+            var response = await _context.Leaderboard.Where(x => x.LevelPackName == levelPack && x.LevelNumber == levelNumber)
+                .OrderByDescending(x => x.Score)
                 .Skip(skip)
                 .Take(take)
                 .ToListAsync();
