@@ -42,7 +42,7 @@ namespace RuynServer.Controllers
             int i = skip + 1;
             StringBuilder stringBuilder = new();
 
-            stringBuilder.AppendLine($"{"#",-5} {"Username",-15} {"Score",10}");
+            stringBuilder.Append($"{"Rank",-5} {"Username",-15} {"Score",10}");
 
             foreach (var entry in response)
             {
@@ -54,16 +54,20 @@ namespace RuynServer.Controllers
                 ? entry.UserName.Substring(0, 12) + "..."
                 : entry.UserName;
 
-                stringBuilder.AppendLine($"{i,-5} {username,-15} {entry.Score,10}");
+                stringBuilder.Append($"{i,-5} {username,-15} {entry.Score,10}");
                 i++;
             }
 
             if (clientId is not null)
             {
+                stringBuilder.Append($"{string.Empty,-5} {string.Empty,-15} {string.Empty,10}");
+                stringBuilder.Append($"{string.Empty,-5} {string.Empty,-15} {string.Empty,10}");
+                stringBuilder.Append($"{"Your Rank",-9} {string.Empty,-11} {string.Empty,10}");
+
                 string? rankString = await GetRankString(clientId: clientId, levelPackName: levelPack, levelNumber: levelNumber);
                 if (rankString is not null)
                 {
-                    stringBuilder.AppendLine(rankString);
+                    stringBuilder.Append(rankString);
                 }
             }
 
@@ -202,7 +206,7 @@ namespace RuynServer.Controllers
                 ? string.Concat(userScore.UserName.AsSpan(0, 12), "...")
                 : userScore.UserName;
 
-                stringBuilder.AppendLine($"{rank,-5} {username,-15} {userScore.Score,10}");
+                stringBuilder.Append($"{rank,-5} {username,-15} {userScore.Score,10}");
 
                 return stringBuilder.ToString();
             }
