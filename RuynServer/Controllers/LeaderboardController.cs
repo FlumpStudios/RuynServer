@@ -102,14 +102,7 @@ namespace RuynServer.Controllers
             
             return Ok(score ?? 0);
         }
-
-        [ProducesResponseType<int?>(StatusCodes.Status200OK)]
-        [HttpGet("{clientId}/{levelPackName}/{levelNumber}/rank", Name = nameof(GetRank))]
-        public async Task<IActionResult> GetRank([FromRoute] string clientId, [FromRoute] string levelPackName, [FromRoute]int levelNumber)
-        {
-            return Ok(await CalcRank(clientId: clientId, levelPackName: levelPackName, levelNumber:levelNumber));
-        }
-
+        
         [ProducesResponseType<string>(StatusCodes.Status200OK)]
         [HttpGet("{clientId}/{levelPackName}/{levelNumber}/rankasstring", Name = nameof(GetRankAsString))]
         public async Task<IActionResult> GetRankAsString([FromRoute] string clientId, [FromRoute] string levelPackName, [FromRoute] int levelNumber)
@@ -149,39 +142,34 @@ namespace RuynServer.Controllers
             var currentScore = await _context.Leaderboard.Where(
                 x => x.LevelPackName == leaderboard.LevelPackName && 
                 x.ClientId == leaderboard.ClientId && 
-                x.LevelNumber == x.LevelNumber).FirstOrDefaultAsync();
+                x.LevelNumber == leaderboard.LevelNumber).FirstOrDefaultAsync();
 
             if (currentScore is null)
             {
                 _context.Add(leaderboard);
+                await _context.SaveChangesAsync();
                 
             }
             else if (currentScore.Score < leaderboard.Score)
             {
                 currentScore.Score = leaderboard.Score;
+                _context.Leaderboard.Update(currentScore);
                 await _context.SaveChangesAsync();
             }
 
-            await _context.SaveChangesAsync();
-            return Ok(await CalcRank(clientId: leaderboard.ClientId, levelPackName: leaderboard.LevelPackName, levelNumber: leaderboard.LevelNumber));
+            int? rank = null;
+            if (currentScore is not null)
+            {
+                rank = await CalcRank(score: currentScore.Score, levelPackName: leaderboard.LevelPackName, levelNumber: leaderboard.LevelNumber);
+                
+            }
+            return Ok(rank);
         }
 
-        private async Task<int?> CalcRank(string clientId, string levelPackName, int levelNumber)
+        private async Task<int?> CalcRank(int score, string levelPackName, int levelNumber)
         {
-            var userScore = await _context.Leaderboard
-                .Where(u => u.ClientId == clientId && u.LevelPackName == levelPackName && u.LevelNumber == u.LevelNumber)
-                .Select(u => u.Score)
-                .FirstOrDefaultAsync();
-
-            if (userScore > 0)
-            {
-                var rank = await _context.Leaderboard
-                    .CountAsync(u => u.Score > userScore) + 1;
-
-                return rank;
-            }
-
-            return null;
+            var rank = (await _context.Leaderboard.CountAsync(u => u.LevelPackName == levelPackName && u.LevelNumber == levelNumber && u.Score > score)) + 1;                
+            return rank;
         }
 
         private async Task<string?> GetRankString(string clientId, string levelPackName, int levelNumber)
@@ -192,8 +180,7 @@ namespace RuynServer.Controllers
 
             if (userScore is not null)
             {
-                var rank = await _context.Leaderboard
-                    .CountAsync(u => u.Score > userScore.Score) + 1;
+                var rank = await CalcRank(score: userScore.Score, levelPackName: levelPackName, levelNumber: levelNumber);
 
                 StringBuilder stringBuilder = new();
 
