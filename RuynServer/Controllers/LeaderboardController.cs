@@ -1,9 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 using RuynServer.Data;
 using RuynServer.Models;
 
@@ -70,7 +68,6 @@ namespace RuynServer.Controllers
                     stringBuilder.Append(rankString);
                 }
             }
-
 
             return Ok(stringBuilder.ToString());
         }
