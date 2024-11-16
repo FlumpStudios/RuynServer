@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <None Update="RuynServer.db">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="RuynServerContext-00f68e85-fd4f-43f6-8970-01517f69455b.db">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
