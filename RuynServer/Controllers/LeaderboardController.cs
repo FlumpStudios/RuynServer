@@ -132,7 +132,7 @@ namespace RuynServer.Controllers
             return Ok(null);
         }
 
-        [ProducesResponseType<int?>(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [HttpPost(Name = nameof(PostScore))]
         public async Task<IActionResult> PostScore([FromBody] Leaderboard leaderboard)
         {
@@ -147,20 +147,13 @@ namespace RuynServer.Controllers
                 await _context.SaveChangesAsync();
                 
             }
-            else if (currentScore.Score < leaderboard.Score)
+            else if (currentScore.Score <leaderboard.Score)
             {
                 currentScore.Score = leaderboard.Score;
                 _context.Leaderboard.Update(currentScore);
                 await _context.SaveChangesAsync();
-            }
-
-            int? rank = null;
-            if (currentScore is not null)
-            {
-                rank = await CalcRank(score: currentScore.Score, levelPackName: leaderboard.LevelPackName, levelNumber: leaderboard.LevelNumber);
-                
-            }
-            return Ok(rank);
+            }            
+            return Ok();
         }
 
         private async Task<int?> CalcRank(int score, string levelPackName, int levelNumber)
