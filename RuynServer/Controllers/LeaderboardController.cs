@@ -130,7 +130,7 @@ namespace RuynServer.Controllers
             if (returnLeaderboard ?? false)
             {
                 var response = await GetLeaderboardString(levelPack: leaderboard.LevelPackName, levelNumber: leaderboard.LevelNumber, 0, leaderboard.ClientId, DEFAULT_TAKE);
-                return Ok(response);
+                return Ok(response.ToString());
             }
             else
             { 
