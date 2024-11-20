@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.CodeDom;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ namespace RuynServer.Controllers
     [Route("/api/v1/[controller]")]
     public class LeaderboardController(RuynServerContext context) : ControllerBase
     {
+        const int DEFAULT_TAKE = 10;
         private readonly RuynServerContext _context = context;
 
         [ProducesResponseType<IEnumerable<Leaderboard>>(StatusCodes.Status200OK)]
@@ -19,7 +21,7 @@ namespace RuynServer.Controllers
             [FromQuery] string levelPack,
             [FromQuery] int levelNumber,
             [FromQuery] int skip,
-            [FromQuery][Range(0, 50)] int take = 10)
+            [FromQuery][Range(0, 50)] int take = DEFAULT_TAKE)
         {
             List<Leaderboard> response = await GetHighScoreQuery(levelPack, levelNumber, skip, take);
 
@@ -33,41 +35,9 @@ namespace RuynServer.Controllers
             [FromQuery] int levelNumber,
             [FromQuery] int skip,
             [FromQuery] string? clientId = null,
-            [FromQuery][Range(0, 50)] int take = 10)
+            [FromQuery][Range(0, 50)] int take = DEFAULT_TAKE)
         {
-            List<Leaderboard> response = await GetHighScoreQuery(levelPack, levelNumber, skip, take);
-
-            int i = skip + 1;
-            StringBuilder stringBuilder = new();
-
-            stringBuilder.Append($"{"Rank",-5} {"Username",-15} {"Score",10}");
-
-            foreach (var entry in response)
-            {
-                if (entry.UserName is null)
-                {
-                    entry.UserName = "Anonymous";
-                }
-                string username = entry.UserName.Length > 12
-                ? entry.UserName.Substring(0, 12) + "..."
-                : entry.UserName;
-
-                stringBuilder.Append($"{i,-5} {username,-15} {entry.Score,10}");
-                i++;
-            }
-
-            if (clientId is not null)
-            {
-                stringBuilder.Append($"{string.Empty,-5} {string.Empty,-15} {string.Empty,10}");
-                stringBuilder.Append($"{string.Empty,-5} {string.Empty,-15} {string.Empty,10}");
-                stringBuilder.Append($"{"Your Rank",-9} {string.Empty,-11} {string.Empty,10}");
-
-                string? rankString = await GetRankString(clientId: clientId, levelPackName: levelPack, levelNumber: levelNumber);
-                if (rankString is not null)
-                {
-                    stringBuilder.Append(rankString);
-                }
-            }
+            StringBuilder stringBuilder = await GetLeaderboardString(levelPack, levelNumber, skip, clientId, take);
 
             return Ok(stringBuilder.ToString());
         }
@@ -132,10 +102,13 @@ namespace RuynServer.Controllers
             return Ok(null);
         }
 
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType<string>(StatusCodes.Status200OK)]
         [HttpPost(Name = nameof(PostScore))]
-        public async Task<IActionResult> PostScore([FromBody] Leaderboard leaderboard)
+        public async Task<IActionResult> PostScore(
+            [FromBody] Leaderboard leaderboard,
+            [FromQuery] bool? returnLeaderboard = true)
         {
+            
             var currentScore = await _context.Leaderboard.Where(
                 x => x.LevelPackName == leaderboard.LevelPackName && 
                 x.ClientId == leaderboard.ClientId && 
@@ -152,8 +125,17 @@ namespace RuynServer.Controllers
                 currentScore.Score = leaderboard.Score;
                 _context.Leaderboard.Update(currentScore);
                 await _context.SaveChangesAsync();
-            }            
-            return Ok();
+            }
+
+            if (returnLeaderboard ?? false)
+            {
+                var response = await GetLeaderboardString(levelPack: leaderboard.LevelPackName, levelNumber: leaderboard.LevelNumber, 0, leaderboard.ClientId, DEFAULT_TAKE);
+                return Ok(response);
+            }
+            else
+            { 
+                return NoContent();
+            }
         }
 
         private async Task<int?> CalcRank(int score, string levelPackName, int levelNumber)
@@ -189,6 +171,45 @@ namespace RuynServer.Controllers
             }
 
             return null;
+        }
+
+        private async Task<StringBuilder> GetLeaderboardString(string levelPack, int levelNumber, int skip, string? clientId, int take)
+        {
+            List<Leaderboard> response = await GetHighScoreQuery(levelPack, levelNumber, skip, take);
+
+            int i = skip + 1;
+            StringBuilder stringBuilder = new();
+
+            stringBuilder.Append($"{"Rank",-5} {"Username",-15} {"Score",10}");
+
+            foreach (var entry in response)
+            {
+                if (entry.UserName is null)
+                {
+                    entry.UserName = "Anonymous";
+                }
+                string username = entry.UserName.Length > 12
+                ? entry.UserName.Substring(0, 12) + "..."
+                : entry.UserName;
+
+                stringBuilder.Append($"{i,-5} {username,-15} {entry.Score,10}");
+                i++;
+            }
+
+            if (clientId is not null)
+            {
+                stringBuilder.Append($"{string.Empty,-5} {string.Empty,-15} {string.Empty,10}");
+                stringBuilder.Append($"{string.Empty,-5} {string.Empty,-15} {string.Empty,10}");
+                stringBuilder.Append($"{"Your Rank",-9} {string.Empty,-11} {string.Empty,10}");
+
+                string? rankString = await GetRankString(clientId: clientId, levelPackName: levelPack, levelNumber: levelNumber);
+                if (rankString is not null)
+                {
+                    stringBuilder.Append(rankString);
+                }
+            }
+
+            return stringBuilder;
         }
 
         private async Task<List<Leaderboard>> GetHighScoreQuery(string levelPack, int levelNumber, int skip, int take)
